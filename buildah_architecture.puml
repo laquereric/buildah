@@ -1,0 +1,173 @@
+@startuml Buildah Ruby Gem Architecture
+
+!theme plain
+
+package "Buildah Ruby Gem" {
+  
+  class Buildah {
+    +new(options = {}) : Client
+    +available?() : Boolean
+    +version() : String
+  }
+  
+  class Client {
+    -options : Hash
+    +initialize(options = {})
+    +execute(command, input = nil) : Hash
+    +from(image, options = {}) : Container
+    +containers() : Array<Container>
+    +images() : Array<Image>
+    +pull(image, options = {}) : Image
+    +build(context, options = {}) : Image
+    +info() : Hash
+    +buildah_available?() : Boolean
+    +buildah_version() : String
+  }
+  
+  class Container {
+    -client : Client
+    -id : String
+    -name : String
+    -image : String
+    +initialize(client, id, name, image)
+    +from(client, image, options) : Container
+    +list(client) : Array<Container>
+    +run(command, options = {}) : Hash
+    +add(source, destination, options = {}) : Hash
+    +copy(source, destination, options = {}) : Hash
+    +config(options = {}) : Hash
+    +commit(image_name, options = {}) : Image
+    +mount() : String
+    +umount() : Hash
+    +rm() : Hash
+    +inspect() : Hash
+  }
+  
+  class Image {
+    -client : Client
+    -name : String
+    -id : String
+    -repository : String
+    -tag : String
+    +initialize(client, name, id, repository, tag)
+    +list(client) : Array<Image>
+    +pull(client, image, options) : Image
+    +push(destination, options = {}) : Hash
+    +tag(new_name) : Hash
+    +rmi(options = {}) : Hash
+    +inspect() : Hash
+    +history() : Array<Hash>
+  }
+  
+  class Builder {
+    -client : Client
+    +initialize(client)
+    +build(client, context, options) : Image
+    +bud(client, context, options) : Image
+  }
+  
+  class Config {
+    -client : Client
+    +initialize(client)
+    +configure(target, options) : Hash
+    +set_env(target, env_vars) : Hash
+    +set_workdir(target, workdir) : Hash
+    +set_cmd(target, cmd) : Hash
+    +set_entrypoint(target, entrypoint) : Hash
+    +expose_ports(target, ports) : Hash
+    +set_user(target, user) : Hash
+    +add_labels(target, labels) : Hash
+    +add_annotations(target, annotations) : Hash
+    +set_volumes(target, volumes) : Hash
+    +set_shell(target, shell) : Hash
+  }
+  
+  ' Error Classes
+  class Error {
+    +message : String
+  }
+  
+  class BuildahNotFoundError {
+  }
+  
+  class CommandError {
+    +command : Array<String>
+    +exit_code : Integer
+    +stderr : String
+  }
+  
+  class ContainerError {
+  }
+  
+  class ImageError {
+  }
+  
+  class BuildError {
+  }
+  
+  class ConfigError {
+  }
+  
+  class ArgumentError {
+  }
+}
+
+' Relationships
+Buildah --> Client : creates
+Client --> Container : manages
+Client --> Image : manages
+Client --> Builder : uses
+Client --> Config : uses
+
+Container --> Image : commits to
+Builder --> Image : builds
+
+Error <|-- BuildahNotFoundError
+Error <|-- CommandError
+Error <|-- ContainerError
+Error <|-- ImageError
+Error <|-- BuildError
+Error <|-- ConfigError
+Error <|-- ArgumentError
+
+Client --> Error : raises
+Container --> ContainerError : raises
+Image --> ImageError : raises
+Builder --> BuildError : raises
+Config --> ConfigError : raises
+
+note right of Client
+  Main interface for buildah operations.
+  Handles command execution and
+  provides factory methods for
+  other classes.
+end note
+
+note right of Container
+  Represents a working container.
+  Provides methods for container
+  lifecycle management.
+end note
+
+note right of Image
+  Represents a container image.
+  Provides methods for image
+  operations and registry
+  interactions.
+end note
+
+note right of Builder
+  Handles building images from
+  Containerfiles/Dockerfiles
+  with comprehensive options.
+end note
+
+note right of Config
+  Manages configuration for
+  containers and images with
+  helper methods for common
+  configuration tasks.
+end note
+
+@enduml
+
